@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import wordList from './resources/words.json';
 
 const MAX_TYPED_KEYS = 30;
@@ -20,8 +20,11 @@ const Word = ({word, validKeys}) =>{
     const joinedKeys = validKeys.join('');
     const matched = word.slice(0, joinedKeys.length);
     const remainder = word.slice(joinedKeys.length);
+
+    const matchedClass = (joinedKeys === word) ? 'matched completed' :   'matched';
+
     return (<>
-    <span className="matched">{matched}</span>
+    <span className={matchedClass}>{matched}</span>
     <span className="remainder">{remainder}</span>
     </>)
 }
@@ -31,14 +34,19 @@ const App = () => {
     const [validKeys, setValidKeys] = useState([]);
     const [completedWords, setcompletedWords] = useState([]);
     const [word, setWord] = useState ('');
+    const containerRef = useRef (null);
 
     useEffect(()=>{
         setWord(getWord);
+        if(containerRef) containerRef.current.focus();
     }, []);
 
     useEffect(()=>{
         const wordFromValidKeys = validKeys.join('').toLowerCase();
+        
+        let timeout = null;
         if(word && word === wordFromValidKeys){
+            timeout = setTimeout(()=> {   
             let newWord = null;
             do {
                 newWord = getWord();
@@ -46,8 +54,11 @@ const App = () => {
 
             setWord(newWord);
             setValidKeys([]);
-            setcompletedWords((prev)=>[...prev, word]);    
-
+            setcompletedWords((prev)=>[...prev, word]);   
+             }, 200); 
+        }
+        return () => {
+            if(timeout) clearTimeout(timeout);
         }
 
     }, [word, validKeys, completedWords]);
@@ -65,7 +76,7 @@ const App = () => {
         }
     }
 
-    return (<div className="container" tabindex ="0" onKeyDown={handleKeyDown}>
+    return (<div className="container" tabindex ="0" onKeyDown={handleKeyDown} ref = {containerRef}>
         <div className="valid-keys">
             <Word word={word} validKeys = {validKeys} />
         </div>
